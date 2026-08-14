@@ -8,7 +8,7 @@ import type {
 } from "../retrieval/conversation-pack.js";
 import type { ParsedManagerQuery } from "../retrieval/bm25.js";
 
-export const DEFAULT_ANSWER_MODEL = "gemini-2.5-flash";
+export const DEFAULT_ANSWER_MODEL = "gemini-2.5-flash-lite";
 
 export type Stance = "positive" | "negative" | "mixed" | "neutral";
 

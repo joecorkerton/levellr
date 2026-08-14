@@ -22,7 +22,7 @@ test("constructs a bounded schema-constrained request without retrieval internal
   const calls: GenerateContentRequest[] = [];
   const result = await synthesizeSentimentPulse({ managerQuery: parsed.originalQuery, evidencePack: pack() }, { apiKey: "test", client: model(answer(), calls), sleep: async () => {} });
   assert.equal(result.status, "ready");
-  assert.equal(calls[0].model, "gemini-2.5-flash");
+  assert.equal(calls[0].model, "gemini-2.5-flash-lite");
   assert.equal(calls[0].config.responseMimeType, "application/json");
   assert.deepEqual(calls[0].config.responseSchema, GEMINI_RESPONSE_SCHEMA);
   assert.match(calls[0].contents, /evidence-a/);

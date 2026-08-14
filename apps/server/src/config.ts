@@ -7,7 +7,7 @@ import type { ServerConfig } from "./app.js";
 dotenv.config({ path: resolve(process.cwd(), ".env") });
 dotenv.config({ path: resolve(process.cwd(), "../../.env") });
 
-const DEFAULT_ANSWER_MODEL = "gemini-2.5-flash";
+const DEFAULT_ANSWER_MODEL = "gemini-2.5-flash-lite";
 const DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001";
 
 export function loadServerConfig(environment: NodeJS.ProcessEnv = process.env): ServerConfig {
