@@ -11,8 +11,9 @@ function pack(): ConversationEvidencePack {
     { rootId: "root-b", evidence: [turn("evidence-b", "root-b", "evidence", "The restored mode feels great")], context: [], omittedOlderAncestorCount: 0 },
   ], viewer: [] , sourceTextCharacters: 50, requestEnvelopeCharacters: 100 };
 }
-function model(text: string | undefined, calls: GenerateContentRequest[] = [], errors: unknown[] = []): GeminiModelClient {
-  return { async generateContent(request) { calls.push(request); const error = errors.shift(); if (error) throw error; return { text }; } };
+function model(text: string | undefined | (string | undefined)[], calls: GenerateContentRequest[] = [], errors: unknown[] = []): GeminiModelClient {
+  const responses = Array.isArray(text) ? [...text] : undefined;
+  return { async generateContent(request) { calls.push(request); const error = errors.shift(); if (error) throw error; return { text: responses ? responses.shift() : text }; } };
 }
 function answer(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({ findings: [{ theme: "Map design", stance: "positive", rationale: "Players are excited by the new map.", supportingCitations: [{ id: "evidence-a", rootId: "root-a" }], rebuttingCitations: [] }], ...overrides });
@@ -57,6 +58,15 @@ test("maps missing credentials, quota, provider, and invalid output failures", a
   assert.equal((await synthesizeSentimentPulse({ managerQuery: "q", evidencePack: pack() }, { client: model(undefined), sleep: async () => {} })).status, "invalid_model_output");
   assert.equal((await synthesizeSentimentPulse({ managerQuery: "q", evidencePack: pack() }, { client: model(undefined, [], [{ status: 429 }]), sleep: async () => {} })).status, "llm_quota_exhausted");
   assert.equal((await synthesizeSentimentPulse({ managerQuery: "q", evidencePack: pack() }, { client: model(undefined, [], [{ status: 401 }]), sleep: async () => {} })).status, "llm_unavailable");
+});
+
+test("retries one contract-invalid result with a corrective prompt", async () => {
+  const calls: GenerateContentRequest[] = [];
+  const invalidCitation = answer({ findings: [{ theme: "Map design", stance: "positive", rationale: "Players are excited by the new map.", supportingCitations: [{ id: "context-a", rootId: "root-a" }], rebuttingCitations: [] }] });
+  const result = await synthesizeSentimentPulse({ managerQuery: "q", evidencePack: pack() }, { client: model([invalidCitation, answer()], calls), sleep: async () => {} });
+  assert.equal(result.status, "ready");
+  assert.equal(calls.length, 2);
+  assert.match(calls[1].contents, /corrective retry/i);
 });
 
 test("does not retry a transient provider failure more than once", async () => {

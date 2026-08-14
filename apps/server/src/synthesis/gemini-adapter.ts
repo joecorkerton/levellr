@@ -134,27 +134,18 @@ export async function synthesizeSentimentPulse(input: SynthesisInput, options: G
     config: { responseMimeType: "application/json", responseSchema: GEMINI_RESPONSE_SCHEMA },
   };
   const deadline = (options.now ?? Date.now)() + 10_000;
-  let response: { text?: string } | undefined;
-  let attempt = 0;
-  while (attempt < 2) {
-    try {
-      response = await withDeadline(client.generateContent(request), deadline, options.now ?? Date.now);
-      break;
-    } catch (error) {
-      if (isQuotaError(error)) return failure("llm_quota_exhausted", "Gemini quota is temporarily unavailable.", base);
-      if (isAuthError(error) || !isTransientError(error) || attempt === 1 || (options.now ?? Date.now)() >= deadline) {
-        return failure("llm_unavailable", "Gemini is temporarily unavailable.", base);
-      }
-      attempt += 1;
-      await (options.sleep ?? defaultSleep)(250);
-    }
-  }
+  const generate = (request: GenerateContentRequest) => generateWithOneTransientRetry(client, request, deadline, options);
+  const initial = await generate(request);
+  if (initial.failure) return failure(initial.failure, initial.failure === "llm_quota_exhausted" ? "Gemini quota is temporarily unavailable." : "Gemini is temporarily unavailable.", base);
 
-  const parsed = parseModelOutput(response?.text);
-  if (!parsed) return failure("invalid_model_output", "Gemini returned an invalid grounded answer.", base);
-  const findings = validateAndHydrateFindings(parsed, input.evidencePack.conversations);
-  if (!findings) return failure("invalid_model_output", "Gemini returned citations or claims outside the grounded answer contract.", base);
-  return { status: "ready", retrievalMode: input.evidencePack.retrievalMode, parsedQuery: input.evidencePack.parsedQuery, findings, viewer: input.evidencePack.viewer };
+  const findings = parseAndValidateFindings(initial.response?.text, input.evidencePack.conversations);
+  if (findings) return { status: "ready", retrievalMode: input.evidencePack.retrievalMode, parsedQuery: input.evidencePack.parsedQuery, findings, viewer: input.evidencePack.viewer };
+
+  const corrective = await generate({ ...request, contents: buildPrompt(input.managerQuery, input.evidencePack, true) });
+  if (corrective.failure) return failure(corrective.failure, corrective.failure === "llm_quota_exhausted" ? "Gemini quota is temporarily unavailable." : "Gemini is temporarily unavailable.", base);
+  const correctedFindings = parseAndValidateFindings(corrective.response?.text, input.evidencePack.conversations);
+  if (!correctedFindings) return failure("invalid_model_output", "Gemini returned citations or claims outside the grounded answer contract.", base);
+  return { status: "ready", retrievalMode: input.evidencePack.retrievalMode, parsedQuery: input.evidencePack.parsedQuery, findings: correctedFindings, viewer: input.evidencePack.viewer };
 }
 
 function citationReferenceSchema() {
@@ -166,21 +157,40 @@ function safeBase(pack: ConversationEvidencePack) {
 }
 function failure(status: SynthesisFailureCode, message: string, base: ReturnType<typeof safeBase>): SynthesisFailure { return { status, message, ...base }; }
 
-function buildPrompt(managerQuery: string, pack: ConversationEvidencePack): string {
+function buildPrompt(managerQuery: string, pack: ConversationEvidencePack, isCorrectiveRetry = false): string {
   const material = pack.conversations.map(({ rootId, evidence, context, omittedOlderAncestorCount }) => ({ rootId, evidence, context, omittedOlderAncestorCount }));
   return [
     "You are the grounded Community Pulse synthesizer.",
-    "Return JSON matching the supplied response schema, with qualitative theme findings only.",
-    "Use only the supplied in-window evidence. Only evidence ids may be cited; context is non-citable.",
+    isCorrectiveRetry ? "This is a corrective retry: return a new answer that strictly follows every rule below." : "Return JSON matching the supplied response schema, with qualitative theme findings only.",
+    "Use only the supplied in-window evidence. Context is non-citable. Cite exact id and rootId pairs from an evidence item; never cite context.",
+    "Each finding needs one or two supporting citations from different conversations. A mixed finding also needs one or two rebutting citations from different conversations, with no conversation reused in that finding.",
     "Retain material disagreement with mixed stance and rebutting citations. A Conversation may contribute once per theme.",
     "Do not claim percentages, global sentiment, majority views, or raw message counts. Do not make recommendations.",
     JSON.stringify({ managerQuery, request: { intent: pack.parsedQuery.intent, dateWindow: pack.parsedQuery.dateWindow }, evidence: material }),
   ].join("\n");
 }
 
+function parseAndValidateFindings(text: string | undefined, conversations: readonly SerializedConversation[]): ThemeFinding[] | undefined {
+  const parsed = parseModelOutput(text);
+  return parsed ? validateAndHydrateFindings(parsed, conversations) : undefined;
+}
 function parseModelOutput(text: string | undefined): unknown {
   if (!text?.trim()) return undefined;
   try { return JSON.parse(text); } catch { return undefined; }
+}
+
+async function generateWithOneTransientRetry(client: GeminiModelClient, request: GenerateContentRequest, deadline: number, options: GeminiAdapterOptions): Promise<{ response?: { text?: string }; failure?: SynthesisFailureCode }> {
+  const now = options.now ?? Date.now;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return { response: await withDeadline(client.generateContent(request), deadline, now) };
+    } catch (error) {
+      if (isQuotaError(error)) return { failure: "llm_quota_exhausted" };
+      if (isAuthError(error) || !isTransientError(error) || attempt === 1 || now() >= deadline) return { failure: "llm_unavailable" };
+      await (options.sleep ?? defaultSleep)(250);
+    }
+  }
+  return { failure: "llm_unavailable" };
 }
 
 function validateAndHydrateFindings(value: unknown, conversations: readonly SerializedConversation[]): ThemeFinding[] | undefined {

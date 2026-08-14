@@ -29,8 +29,11 @@ The map ends with an implementation-ready slice and acceptance bar, not a comple
 
 1. [06 — Scaffold the React and TypeScript application](issues/06-scaffold-react-and-typescript-app.md)
 2. [07 — Build the BM25-first retrieval path](issues/07-build-bm25-first-retrieval.md)
-3. [08 — Connect BM25 retrieval to the grounded answer flow](issues/08-connect-bm25-to-grounded-answer.md)
-4. [09 — Add the optional local vector retrieval upgrade](issues/09-add-local-vector-retrieval.md) only if time remains.
+3. [08 — Build the conversation-aware evidence pack](issues/08-build-conversation-evidence-pack.md)
+4. [09 — Build the Gemini answer-synthesis adapter](issues/09-build-gemini-answer-synthesis-adapter.md)
+5. [10 — Wire the grounded manager-query flow](issues/10-wire-grounded-manager-query-flow.md)
+6. [11 — Establish the BM25 grounded-answer evaluation baseline](issues/11-establish-bm25-grounded-answer-evaluation-baseline.md)
+7. [12 — Add the optional local vector retrieval upgrade](issues/12-add-local-vector-retrieval.md) only if time remains.
 
 ## Not yet specified
 
@@ -40,4 +43,4 @@ The map ends with an implementation-ready slice and acceptance bar, not a comple
 
 - Content/post recommendations — the agreed slice proves sentiment understanding, not marketing planning.
 - Follow-up conversation memory, authentication, user/community management, dashboards, and persistent analytics storage — each expands beyond one grounded Q&A flow.
-- Hosted vector infrastructure, autonomous agents, and a general-purpose semantic analytics platform. The local pgvector work in issue 09 is optional, not a substitute for a working BM25-first path.
+- Hosted vector infrastructure, autonomous agents, and a general-purpose semantic analytics platform. The local pgvector work in issue 12 is optional, not a substitute for a working BM25-first path.

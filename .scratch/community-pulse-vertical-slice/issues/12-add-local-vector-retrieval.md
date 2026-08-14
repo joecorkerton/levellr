@@ -2,11 +2,11 @@
 
 Type: task
 Status: ready-for-agent
-Blocked by: 08
+Blocked by: 11
 
 ## Goal
 
-After the BM25-backed manager-query flow is working and validated, add the planned local semantic-retrieval quality upgrade without making it a prerequisite for the demo. BM25 remains the reliable baseline and fallback.
+After the BM25-backed manager-query flow is working and its issue 11 evaluation baseline is recorded, add the planned local semantic-retrieval quality upgrade without making it a prerequisite for the demo. BM25 remains the reliable baseline and fallback.
 
 ## Scope
 
@@ -26,11 +26,12 @@ After the BM25-backed manager-query flow is working and validated, add the plann
 - The complete BM25-first test suite still passes when Postgres and Gemini credentials are absent.
 - With a complete current seed, vector search returns at most 40 date-filtered candidates and the deterministic RRF merge returns at most 50 candidates.
 - A partial, stale, or unavailable seed produces the same typed BM25 behavior as issue 07, not an error or a falsely labelled hybrid result.
+- Issue 11's evaluation suite runs before and after the upgrade: all structural invariants and known-relevant Conversation coverage are preserved, and any fixture-level retrieval-quality trade-off is recorded rather than hidden behind an aggregate score.
 - Embeddings and API credentials remain server-only; stored records retain the metadata needed to inspect every selected Community message.
-- Add focused tests for readiness gating, RRF/deduplication/tie ordering, and fallback, then run the full typecheck, test suite, and production build.
+- Add focused tests for readiness gating, RRF/deduplication/tie ordering, and fallback, then run the full typecheck, test suite, production build, and evaluation baseline comparison.
 
 ## Dependencies
 
-Do not start until [Connect BM25 retrieval to the grounded answer flow](08-connect-bm25-to-grounded-answer.md) has passed its acceptance criteria, including the complete BM25-first suite and live smoke check. This is the final optional retrieval enhancement for the timeboxed slice.
+Do not start until [Establish the BM25 grounded-answer evaluation baseline](11-establish-bm25-grounded-answer-evaluation-baseline.md) has passed its acceptance criteria. This is the final optional retrieval enhancement for the timeboxed slice.
 
 ## Comments
