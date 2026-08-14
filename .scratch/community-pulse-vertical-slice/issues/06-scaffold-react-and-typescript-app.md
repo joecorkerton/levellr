@@ -1,7 +1,7 @@
 # Scaffold the React and TypeScript application
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none
 
 ## Goal
@@ -35,5 +35,17 @@ Create the runnable local foundation for the 90-minute Community Pulse vertical 
 ## Dependencies
 
 This can begin immediately. It deliberately does not depend on [Set the conversation-aware evidence pack](05-set-conversation-aware-evidence-pack.md), whose rules will guide a later retrieval-and-synthesis ticket.
+
+## Answer
+
+Implemented in commit `83400b1`.
+
+- Added the React/Vite frontend and TypeScript/Express backend workspace.
+- Added typed health and pre-integration query endpoints.
+- Added server-only environment configuration and client-bundle secret checks.
+- Updated local setup documentation in `README.md`.
+- Added API tests plus build/preview smoke verification.
+
+Validation: `npm run check` passes.
 
 ## Comments
