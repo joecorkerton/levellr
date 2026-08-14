@@ -41,3 +41,28 @@ Example questions your user might ask:
 Build something that can start to answer questions like these — you decide what to prioritise and what to leave out.
 
 A simple Q&A (ask a question, get a useful answer grounded in the messages) is plenty. Anything beyond — filtering, better retrieval, follow-ups — is a **bonus, not expected**. We care far more about your **choices and reasoning** than how much you cover: get something working, then tell us (in the README or on the call) what you assumed, what you cut, and what you'd do next.
+
+## Community Pulse scaffold
+
+The repository now contains a runnable React frontend and TypeScript API. This first slice is deliberately pre-integration: **answers, retrieval, and message ingestion are not connected yet**. The API returns an explicit `not_ready` response rather than fabricating a pulse.
+
+### Run locally
+
+Requirements: Node.js 20+.
+
+```sh
+npm install
+npm run dev
+```
+
+The frontend is at <http://localhost:5173> and the API health check is at <http://localhost:3001/api/health>. To run them separately, use `npm run dev:client` and `npm run dev:server`.
+
+Copy `.env.example` to `.env` for server configuration. `GEMINI_API_KEY` is loaded by the server only and is not needed until the future retrieval/synthesis integration. Never prefix it with `VITE_` or place it in frontend code.
+
+### Checks
+
+```sh
+npm run check
+```
+
+This runs TypeScript checks, the API contract tests, production builds, the API health/frontend preview smoke check, and verifies that Gemini key names do not enter the client bundle.

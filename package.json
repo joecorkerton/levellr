@@ -1,0 +1,22 @@
+{
+  "name": "community-pulse",
+  "private": true,
+  "workspaces": [
+    "apps/client",
+    "apps/server"
+  ],
+  "scripts": {
+    "dev": "concurrently --names client,server --prefix-colors cyan,magenta \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "npm run dev --workspace @community-pulse/client",
+    "dev:server": "npm run dev --workspace @community-pulse/server",
+    "build": "npm run build --workspaces",
+    "build:client": "npm run build --workspace @community-pulse/client",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspace @community-pulse/server",
+    "check": "npm run typecheck && npm test && npm run build && npm run verify:scaffold",
+    "verify:scaffold": "node scripts/verify-scaffold.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
