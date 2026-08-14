@@ -71,7 +71,7 @@ const client = start(npmCommand, ["run", "preview", "--workspace", "@community-p
 try {
   const healthResponse = await waitFor(`${serverUrl}/api/health`);
   const health = await healthResponse.json();
-  if (health.status !== "ok" || health.queryStatus !== "not_ready") {
+  if (health.status !== "ok" || health.queryStatus !== "retrieval_ready") {
     throw new Error("The API health endpoint returned an unexpected response");
   }
 

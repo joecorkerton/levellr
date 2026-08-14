@@ -44,7 +44,7 @@ A simple Q&A (ask a question, get a useful answer grounded in the messages) is p
 
 ## Community Pulse scaffold
 
-The repository now contains a runnable React frontend and TypeScript API. This first slice is deliberately pre-integration: **answers, retrieval, and message ingestion are not connected yet**. The API returns an explicit `not_ready` response rather than fabricating a pulse.
+The repository contains a runnable React frontend and TypeScript API. The current slice loads `messages.json` locally and exposes deterministic, dependency-free BM25 candidate retrieval. It deliberately stops before conversation-aware evidence selection and Gemini synthesis: candidates are inspectable sources, not a grounded Sentiment pulse.
 
 ### Run locally
 
@@ -57,7 +57,7 @@ npm run dev
 
 The frontend is at <http://localhost:5173> and the API health check is at <http://localhost:3001/api/health>. To run them separately, use `npm run dev:client` and `npm run dev:server`.
 
-Copy `.env.example` to `.env` for server configuration. `GEMINI_API_KEY` is loaded by the server only and is not needed until the future retrieval/synthesis integration. Never prefix it with `VITE_` or place it in frontend code.
+Copy `.env.example` to `.env` for server configuration. `GEMINI_API_KEY` is loaded by the server only and is not needed for the local BM25 retrieval path. Never prefix it with `VITE_` or place it in frontend code.
 
 ### Checks
 
@@ -65,4 +65,4 @@ Copy `.env.example` to `.env` for server configuration. `GEMINI_API_KEY` is load
 npm run check
 ```
 
-This runs TypeScript checks, the API contract tests, production builds, the API health/frontend preview smoke check, and verifies that Gemini key names do not enter the client bundle.
+This runs TypeScript checks, the BM25/API contract tests, production builds, the API health/frontend preview smoke check, and verifies that Gemini key names do not enter the client bundle.

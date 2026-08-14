@@ -48,6 +48,17 @@ textarea:focus { border-color: #6c5934; }
 .notice { border-left: 2px solid #b1965c; color: #5f594e; font-size: 13px; line-height: 1.5; margin: 20px 0 0; padding-left: 10px; }
 
 .empty-state { align-items: flex-start; border-bottom: 1px solid #302f2b; display: flex; gap: 23px; margin: 67px 8% 0; padding-bottom: 58px; }
+.results { border-bottom: 1px solid #302f2b; margin: 67px 8% 0; padding-bottom: 44px; }
+.results-heading { align-items: flex-start; display: flex; justify-content: space-between; }
+.results h2 { color: #e8e4dc; font-size: 22px; letter-spacing: -.04em; margin: 0; }
+.mode-label { border: 1px solid #5b513b; color: #d8b56d; font-family: 'DM Mono', monospace; font-size: 10px; padding: 7px 9px; text-transform: uppercase; }
+.result-note, .query-meta { color: #85857d; font-size: 13px; line-height: 1.5; margin: 13px 0 0; }
+.query-meta { color: #b0aa9b; font-family: 'DM Mono', monospace; font-size: 10px; }
+.candidate-list { display: grid; gap: 10px; list-style: none; margin: 24px 0 0; padding: 0; }
+.candidate { background: #1b1b18; border: 1px solid #302f2b; padding: 15px 17px; }
+.candidate-topline, .candidate-source { color: #b9a171; display: flex; font-family: 'DM Mono', monospace; font-size: 10px; gap: 12px; justify-content: space-between; text-transform: uppercase; }
+.candidate p { color: #e8e4dc; font-size: 14px; line-height: 1.5; margin: 12px 0 15px; }
+.candidate-source { color: #77766f; justify-content: flex-start; text-transform: none; }
 .empty-icon { align-items: center; border: 1px solid #4a463a; border-radius: 50%; color: #d8b56d; display: flex; flex: 0 0 49px; font-size: 33px; height: 49px; justify-content: center; line-height: 1; }
 .empty-state .section-label { margin-bottom: 10px; }
 .empty-state h2 { color: #e8e4dc; font-size: 22px; }
@@ -69,7 +80,7 @@ footer span { color: #b1965c; padding: 0 5px; }
   .query-card { padding: 25px 21px 22px; }
   .form-footer { align-items: flex-start; flex-direction: column; }
   .form-footer button { width: 100%; justify-content: space-between; }
-  .empty-state, .starter-section { margin-left: 0; margin-right: 0; }
+  .empty-state, .results, .starter-section { margin-left: 0; margin-right: 0; }
   .starter-list { grid-template-columns: 1fr; }
   .status-pill { font-size: 9px; }
 }

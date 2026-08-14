@@ -1,7 +1,7 @@
 # Build the BM25-first retrieval path
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 06
 
 ## Goal
@@ -20,7 +20,7 @@ Turn a Manager query into an inspectable, date-filtered ranked list of Community
 
 ## Deferred
 
-- Postgres, `pgvector`, migrations, Docker, embeddings, and reciprocal-rank fusion; these belong exclusively to issue 09.
+- Postgres, `pgvector`, migrations, Docker, embeddings, and reciprocal-rank fusion; these belong exclusively to issue 12.
 - Conversation projection, ancestor hydration, evidence-pack selection, Gemini synthesis, citation validation, and the conversation viewer.
 - Recommendations, dashboards, and persistent analytics storage.
 
@@ -35,5 +35,17 @@ Turn a Manager query into an inspectable, date-filtered ranked list of Community
 ## Dependencies
 
 Begin after [Scaffold the React and TypeScript application](06-scaffold-react-and-typescript-app.md) supplies the runnable API, client, and test commands. The resulting candidate list is the direct input to the conversation-aware rules in issue 05.
+
+## Answer
+
+Implemented the dependency-free BM25-first retrieval path.
+
+- Added a local `messages.json` loader and in-process index preserving complete Community source records.
+- Added normalized, immutable `BM25_LEXICON_V1` v1 lists, deterministic query intent parsing, dataset-latest-relative `last N days` windows, BM25 scoring, phrase/intent/short-message adjustments, stable tie ordering, and a 20-candidate cap.
+- Replaced the scaffold query placeholder with typed `retrievalMode: "bm25"` candidate and explicit `NO_RESULTS` responses; no Gemini, database, vector service, or grounded pulse is involved.
+- Updated the client to render inspectable candidates without presenting them as an answer.
+- Added normalization, lexicon, date-window, tie-order, fixture, API, and no-results tests.
+
+Validation: `npm run check` passes without credentials, Postgres, Docker, or network access.
 
 ## Comments

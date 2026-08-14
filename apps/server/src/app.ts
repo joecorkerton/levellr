@@ -1,4 +1,12 @@
 import express, { type Express, type Request, type Response } from "express";
+import {
+  createBM25Index,
+  loadCommunityMessagesSync,
+  type BM25Candidate,
+  type BM25Index,
+  type BM25Intent,
+  type SentimentTimeWindow,
+} from "./retrieval/bm25.js";
 
 export interface ServerConfig {
   port: number;
@@ -12,17 +20,36 @@ export interface ServerConfig {
 export interface HealthResponse {
   status: "ok";
   service: "community-pulse-api";
-  queryStatus: "not_ready";
+  queryStatus: "retrieval_ready";
 }
 
 export interface QueryRequest {
   query: string;
 }
 
-export interface QueryNotReadyResponse {
-  status: "not_ready";
-  code: "QUERY_NOT_READY";
-  message: string;
+interface QueryMetadata {
+  originalQuery: string;
+  searchQuery: string;
+  intent: BM25Intent;
+  dateWindow: SentimentTimeWindow | null;
+}
+
+export interface QueryRetrievalResponse {
+  status: "retrieved";
+  code: "RETRIEVAL_READY";
+  retrievalMode: "bm25";
+  message: "Candidate retrieval is ready; no grounded answer has been synthesized.";
+  query: QueryMetadata;
+  candidates: BM25Candidate[];
+}
+
+export interface QueryEmptyResponse {
+  status: "empty";
+  code: "NO_RESULTS";
+  retrievalMode: "bm25";
+  message: "No Community message candidates matched this query and time window.";
+  query: QueryMetadata;
+  candidates: [];
 }
 
 export interface InvalidQueryResponse {
@@ -31,16 +58,15 @@ export interface InvalidQueryResponse {
   message: string;
 }
 
-export type QueryResponse = QueryNotReadyResponse | InvalidQueryResponse;
+export type QueryResponse = QueryRetrievalResponse | QueryEmptyResponse | InvalidQueryResponse;
 
-const notReadyResponse: QueryNotReadyResponse = {
-  status: "not_ready",
-  code: "QUERY_NOT_READY",
-  message:
-    "Community Pulse answers are not connected yet. Retrieval and grounded synthesis will be added next.",
-};
+export interface AppDependencies {
+  retrievalIndex?: BM25Index;
+}
 
-export function createApp(config: ServerConfig): Express {
+export function createApp(config: ServerConfig, dependencies: AppDependencies = {}): Express {
+  const retrievalIndex =
+    dependencies.retrievalIndex ?? createBM25Index(loadCommunityMessagesSync());
   const app = express();
 
   app.use((request, response, next) => {
@@ -61,7 +87,7 @@ export function createApp(config: ServerConfig): Express {
     response.json({
       status: "ok",
       service: "community-pulse-api",
-      queryStatus: "not_ready",
+      queryStatus: "retrieval_ready",
     });
   });
 
@@ -77,8 +103,34 @@ export function createApp(config: ServerConfig): Express {
         return;
       }
 
-      // Deliberately do not call a model or imply that this scaffold has analyzed messages.
-      response.json(notReadyResponse);
+      const result = retrievalIndex.search(request.body.query.trim());
+      const query = {
+        originalQuery: result.parsedQuery.originalQuery,
+        searchQuery: result.parsedQuery.searchQuery,
+        intent: result.parsedQuery.intent,
+        dateWindow: result.parsedQuery.dateWindow,
+      } satisfies QueryMetadata;
+
+      if (result.candidates.length === 0) {
+        response.json({
+          status: "empty",
+          code: "NO_RESULTS",
+          retrievalMode: "bm25",
+          message: "No Community message candidates matched this query and time window.",
+          query,
+          candidates: [],
+        });
+        return;
+      }
+
+      response.json({
+        status: "retrieved",
+        code: "RETRIEVAL_READY",
+        retrievalMode: "bm25",
+        message: "Candidate retrieval is ready; no grounded answer has been synthesized.",
+        query,
+        candidates: result.candidates,
+      });
     },
   );
 
