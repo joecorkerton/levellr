@@ -1,7 +1,7 @@
 # Verify the supplied LLM interface and fallback
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: none
 
 ## Question
@@ -66,6 +66,10 @@ All failures return a typed, non-success result and never turn an ungrounded or 
 
 The model should receive only the manager query, parsed time window/intent, and the deterministic evidence pack from issue 01 (up to 12 excerpts). It must cite the supplied stable message IDs; later contract work must reject citations that are absent from that pack.
 
+### Live smoke check
+
+With the key supplied in the ignored `.env`, one request was sent to `gemini-2.5-flash` through `@google/genai` using the JSON response schema above. The response had non-empty `response.text`, parsed as JSON, matched the smoke schema, and cited only the supplied `msg_probe_001` evidence ID. No key or raw response was persisted.
+
 ### Sources
 
 - [Google Gen AI SDK README](https://github.com/googleapis/js-genai#quickstart) — server-side `GoogleGenAI` initialization and `models.generateContent`.
@@ -75,4 +79,4 @@ The model should receive only the manager query, parsed time window/intent, and 
 
 ## Comments
 
-- Live verification is blocked until the temporary Google AI Studio key is entered in the ignored `.env` file.
+- Live smoke check completed after the temporary Google AI Studio key was entered in the ignored `.env` file; no credential was recorded.

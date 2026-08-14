@@ -20,6 +20,7 @@ The map ends with an implementation-ready slice and acceptance bar, not a comple
 - [02 — Profile the corpus for sentiment fixtures](issues/02-profile-corpus-for-sentiment-fixtures.md): the selected fixtures cover broad Tides Remastered excitement, recent Bushido update frustrations, and current Remastered feature-preservation concerns. Mixed reception to the final update is a grounded alternate framing, not an additional sentiment category.
 
 - [01 — retrieval and evidence pack](issues/01-choose-retrieval-evidence-pack.md#answer): Gemini `gemini-embedding-001` in local Postgres/pgvector plus BM25 guardrail/fallback; latest-dataset-relative date windows; 40 vector + 20 lexical candidates merged to 50; and at most 12 source excerpts (600 characters each) sent to the model.
+- [03 — LLM interface and fallback](issues/03-verify-llm-interface-and-fallback.md#answer): `gemini-2.5-flash` returns schema-constrained JSON through `@google/genai`; validate `response.text` at runtime; fail closed on missing credentials, quota, malformed output, or insufficient evidence; one live smoke request passed.
 
 ## Not yet specified
 
