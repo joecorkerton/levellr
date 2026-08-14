@@ -21,10 +21,11 @@ The map ends with an implementation-ready slice and acceptance bar, not a comple
 
 - [01 — retrieval and evidence pack](issues/01-choose-retrieval-evidence-pack.md#answer): Gemini `gemini-embedding-001` in local Postgres/pgvector plus BM25 guardrail/fallback; latest-dataset-relative date windows; 40 vector + 20 lexical candidates merged to 50; and at most 12 source excerpts (600 characters each) sent to the model.
 - [03 — LLM interface and fallback](issues/03-verify-llm-interface-and-fallback.md#answer): `gemini-2.5-flash` returns schema-constrained JSON through `@google/genai`; validate `response.text` at runtime; fail closed on missing credentials, quota, malformed output, or insufficient evidence; one live smoke request passed.
+- [Set the answer and evaluation contract](issues/04-set-answer-and-evaluation-contract.md#answer): synthesize reply-tree Conversation profiles qualitatively, hydrate old ancestors only as context, require two qualifying Conversations, and make cited evidence inspectable through a thread viewer.
 
 ## Not yet specified
 
-- The precise citation presentation and empty/error states once the response contract and available LLM interface are known.
+<!-- No in-scope fog at this resolution; live decisions are child tickets. -->
 
 ## Out of scope
 

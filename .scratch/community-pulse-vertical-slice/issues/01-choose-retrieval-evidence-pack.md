@@ -39,3 +39,5 @@ The synthesis prompt should receive only the manager query, parsed window/intent
 This is intentionally a hybrid retrieval decision, not a theme taxonomy: corpus-specific themes should be discovered from the evidence by the constrained synthesis step and verified in the later fixture ticket. The output remains a sentiment pulse, not an ungrounded pulse or recommendation.
 
 ## Comments
+
+- The response contract now makes the Conversation rather than an isolated Community message the synthesis unit. [Set the conversation-aware evidence pack](05-set-conversation-aware-evidence-pack.md) will define the bounded projection and supersede the message-only model-input limits where necessary.
