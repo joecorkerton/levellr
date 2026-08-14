@@ -10,6 +10,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@google/genai": "2.17.1",
     "dotenv": "^16.4.7",
     "express": "^5.1.0"
   },
