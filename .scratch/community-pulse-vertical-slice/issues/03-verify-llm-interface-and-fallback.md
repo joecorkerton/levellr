@@ -60,7 +60,7 @@ All failures return a typed, non-success result and never turn an ungrounded or 
 | --- | --- |
 | Missing `GEMINI_API_KEY`, or authentication/permission failure (401/403) | Do not call or retry another model. Return `llm_unavailable` with setup guidance; preserve the retrieved evidence if present. |
 | Quota/rate limit (429) | Do not silently switch to Flash-Lite or retry until the request burns more quota. Return `llm_quota_exhausted` with a temporary-unavailability message and preserve evidence. |
-| Other transient provider failure (5xx/network timeout) | Return `llm_unavailable` after at most one bounded retry for the one request; never fabricate a local answer from the query. |
+| Other transient provider failure (5xx/network timeout) | Allow one retry after a short capped backoff (250 ms) within a 10-second request deadline, then return `llm_unavailable`; never fabricate a local answer from the query. |
 | Empty, non-JSON, or schema-invalid model output | Discard the output, log only a safe diagnostic, and return `invalid_model_output`; do not salvage prose or expose raw model text as the answer. |
 | No evidence, or fewer than three distinct retrieved messages for the pulse query | Skip the model call and return `insufficient_evidence` with the requested date window and an explicit statement that no reliable grounded answer can be made. Do not claim that the community has no opinion. |
 
