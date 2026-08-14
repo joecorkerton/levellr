@@ -62,7 +62,7 @@ All failures return a typed, non-success result and never turn an ungrounded or 
 | Quota/rate limit (429) | Do not silently switch to Flash-Lite or retry until the request burns more quota. Return `llm_quota_exhausted` with a temporary-unavailability message and preserve evidence. |
 | Other transient provider failure (5xx/network timeout) | Allow one retry after a short capped backoff (250 ms) within a 10-second request deadline, then return `llm_unavailable`; never fabricate a local answer from the query. |
 | Empty, non-JSON, or schema-invalid model output | Discard the output, log only a safe diagnostic, and return `invalid_model_output`; do not salvage prose or expose raw model text as the answer. |
-| No evidence, or fewer than three distinct retrieved messages for the pulse query | Skip the model call and return `insufficient_evidence` with the requested date window and an explicit statement that no reliable grounded answer can be made. Do not claim that the community has no opinion. |
+| No evidence, or fewer than three distinct retrieved messages for the manager query | Skip the model call and return `insufficient_evidence` with the requested date window and an explicit statement that no reliable grounded answer can be made. Do not claim that the community has no opinion. |
 
 The model should receive only the manager query, parsed time window/intent, and the deterministic evidence pack from issue 01 (up to 12 excerpts). It must cite the supplied stable message IDs; later contract work must reject citations that are absent from that pack.
 
