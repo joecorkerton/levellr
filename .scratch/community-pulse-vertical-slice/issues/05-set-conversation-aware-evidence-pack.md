@@ -6,17 +6,17 @@ Blocked by: none
 
 ## Question
 
-The existing hybrid retrieval decision ranks individual Community messages, but the response contract now derives sentiment from reply-tree Community conversations. Within the 90-minute slice, decide how ranked message hits become a bounded pack of distinct Conversations: projection and ranking, ancestor hydration, transcript/context limits, per-conversation diversity, and the resulting model-input budget. Record which parts of the earlier message-level evidence-pack decision this supersedes without adding a new vector service or turning the model into a source selector.
+The existing message-level retrieval decision ranks individual Community messages, but the response contract now derives sentiment from reply-tree Community conversations. Within the 90-minute slice, decide how ranked message hits become a bounded pack of distinct Conversations: projection and ranking, ancestor hydration, transcript/context limits, per-conversation diversity, and the resulting model-input budget. Record which parts of the earlier message-level evidence-pack decision this supersedes without adding a new vector service or turning the model into a source selector.
 
 ## Answer
 
-Keep hybrid retrieval message-level, then deterministically project its ranked hits into a conversation-aware evidence pack before any model call. The model receives selected Conversation blocks, never the 50-message candidate pool or retrieval scores, and it cannot add sources.
+Keep retrieval message-level, then deterministically project its ranked hits into a conversation-aware evidence pack before any model call. The model receives selected Conversation blocks, never the 50-message candidate pool or retrieval scores, and it cannot add sources.
 
 ### Project and rank Conversations
 
-1. Keep issue 01 unchanged through date-filtered vector/BM25 retrieval, reciprocal-rank fusion, deduplication, and the 50-message candidate cap (or BM25's 20 candidates in degraded mode). Every candidate is therefore already in the Sentiment time window when one was requested.
+1. Apply this projection after whichever issue 01 retrieval stage is active: the required BM25-first path supplies its date-filtered top 20 candidates, while the optional vector upgrade supplies the fused 50-message pool. Every candidate is therefore already in the Sentiment time window when one was requested.
 2. Resolve each candidate through its `reply_to` chain. A valid edge must target an existing Community message in the same channel, occur no later than its child, and remain acyclic. Group valid candidates by the resolved root id. A candidate with a dangling or otherwise invalid chain is unassigned and is dropped; it must not become a Conversation by proximity. A root message is its own Conversation.
-3. Rank each distinct Conversation by its highest-scoring fused candidate (its **representative hit**). This deliberately gives extra hits in one reply tree no score bonus. Break ties by the representative hit's timestamp descending, then root id ascending. Retrieval scores and ranks stay server-side.
+3. Rank each distinct Conversation by its highest-scoring retrieval candidate (its **representative hit**): BM25 score in the first stage and fused score after the optional upgrade. This deliberately gives extra hits in one reply tree no score bonus. Break ties by the representative hit's timestamp descending, then root id ascending. Retrieval scores and ranks stay server-side.
 4. Traverse that list once to select at most **six** distinct qualifying Conversations. A Conversation qualifies only if it has at least one selected in-window evidence turn. If fewer than two Conversations survive the pack rules, return `insufficient_evidence` without calling Gemini.
 
 ### Select evidence turns with diversity
@@ -59,6 +59,6 @@ With ids and other metadata this is roughly 4,500 input tokens before the fixed 
 
 This supersedes issue 01's final, message-only evidence-pack step: do **not** greedily send up to twelve unrelated messages directly from the merged pool, and do **not** treat its two-per-author/four-per-channel limits as a way to choose individual model sources before conversation projection. Its 12 × 600 evidence budget is retained for cited current evidence, but is now organized as six two-turn Conversation blocks and augmented by the bounded, non-citable context budget above.
 
-All earlier retrieval decisions remain in force: the 40 vector / 20 BM25 limits, 50-message merged cap, query parsing, normalization, RRF formula, exact pgvector scan, and BM25-only degraded mode. The degraded path uses the same Conversation projection and model budget over its BM25 candidates. This adds neither a vector service nor an LLM source-selection step.
+All earlier retrieval decisions remain in force, now in delivery order: the BM25-first path uses query parsing, normalization, and its top-20 limit; the optional upgrade adds the 40-vector/20-BM25 limits, 50-message merged cap, RRF formula, and exact pgvector scan. The working BM25 path and optional hybrid path use the same Conversation projection and model budget. This adds neither a vector service nor an LLM source-selection step.
 
 ## Comments

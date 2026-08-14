@@ -18,13 +18,13 @@ The repository/session did not contain the temporary key or a separately supplie
 
 - `.env.example` is the committed template.
 - `.env` is local-only and ignored by git.
-- Set only `GEMINI_API_KEY` in `.env`; do not commit its value. The template also names the answer and embedding models so later server-side jobs use stable identifiers.
+- Set only `GEMINI_API_KEY` in `.env`; do not commit its value. The template reserves the embedding-model setting for the later optional vector upgrade; the BM25-first path does not read it.
 
 The SDK shape and failure categories below are verified against Google's current `@google/genai` source and documentation. The live success-path smoke check remains pending until `GEMINI_API_KEY` is populated.
 
 ### Integration decision
 
-Use the server-side `@google/genai` SDK with `gemini-2.5-flash` for constrained answer synthesis. The hybrid retrieval decision in issue 01 also uses `gemini-embedding-001` for the one-time document/query embedding job; keep that model server-side and separate from answer synthesis. `gemini-2.5-flash-lite` is not part of this slice and must not be introduced as an automatic error fallback.
+Use the server-side `@google/genai` SDK with `gemini-2.5-flash` for constrained answer synthesis. The required BM25-first path in issue 01 has no embedding call. Its later optional vector upgrade uses `gemini-embedding-001` for one-time document/query embeddings; keep that model server-side and separate from answer synthesis. `gemini-2.5-flash-lite` is not part of this slice and must not be introduced as an automatic error fallback.
 
 The minimal request/response seam is:
 
@@ -62,9 +62,9 @@ All failures return a typed, non-success result and never turn an ungrounded or 
 | Quota/rate limit (429) | Do not silently switch to Flash-Lite or retry until the request burns more quota. Return `llm_quota_exhausted` with a temporary-unavailability message and preserve evidence. |
 | Other transient provider failure (5xx/network timeout) | Allow one retry after a short capped backoff (250 ms) within a 10-second request deadline, then return `llm_unavailable`; never fabricate a local answer from the query. |
 | Empty, non-JSON, or schema-invalid model output | Discard the output, log only a safe diagnostic, and return `invalid_model_output`; do not salvage prose or expose raw model text as the answer. |
-| No evidence, or fewer than three distinct retrieved messages for the manager query | Skip the model call and return `insufficient_evidence` with the requested date window and an explicit statement that no reliable grounded answer can be made. Do not claim that the community has no opinion. |
+| No evidence, or fewer than two distinct qualifying Conversations after conversation-aware evidence packing | Skip the model call and return `insufficient_evidence` with the requested date window and an explicit statement that no reliable grounded answer can be made. Do not claim that the community has no opinion. |
 
-The model should receive only the manager query, parsed time window/intent, and the deterministic evidence pack from issue 01 (up to 12 excerpts). It must cite the supplied stable message IDs; later contract work must reject citations that are absent from that pack.
+The model should receive only the manager query, parsed time window/intent, and the deterministic Conversation evidence pack from issue 05. It must cite only supplied in-window evidence IDs; the response contract rejects every other citation.
 
 ### Live smoke check
 
