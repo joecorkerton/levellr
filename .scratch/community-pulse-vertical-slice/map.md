@@ -19,9 +19,10 @@ The map ends with an implementation-ready slice and acceptance bar, not a comple
 
 - [02 — Profile the corpus for sentiment fixtures](issues/02-profile-corpus-for-sentiment-fixtures.md): the selected fixtures cover broad Tides Remastered excitement, recent Bushido update frustrations, and current Remastered feature-preservation concerns. Mixed reception to the final update is a grounded alternate framing, not an additional sentiment category.
 
-- [01 — retrieval and evidence pack](issues/01-choose-retrieval-evidence-pack.md#answer): Gemini `gemini-embedding-001` in local Postgres/pgvector plus BM25 guardrail/fallback; latest-dataset-relative date windows; 40 vector + 20 lexical candidates merged to 50; and at most 12 source excerpts (600 characters each) sent to the model.
+- [01 — retrieval and evidence pack](issues/01-choose-retrieval-evidence-pack.md#answer): Gemini `gemini-embedding-001` in local Postgres/pgvector plus BM25 guardrail/fallback; latest-dataset-relative date windows; and 40 vector + 20 lexical candidates merged to 50. Its former message-only evidence-pack step is superseded by issue 05.
 - [03 — LLM interface and fallback](issues/03-verify-llm-interface-and-fallback.md#answer): `gemini-2.5-flash` returns schema-constrained JSON through `@google/genai`; validate `response.text` at runtime; fail closed on missing credentials, quota, malformed output, or insufficient evidence; one live smoke request passed.
 - [Set the answer and evaluation contract](issues/04-set-answer-and-evaluation-contract.md#answer): synthesize reply-tree Conversation profiles qualitatively, hydrate old ancestors only as context, require two qualifying Conversations, and make cited evidence inspectable through a thread viewer.
+- [Set the conversation-aware evidence pack](issues/05-set-conversation-aware-evidence-pack.md#answer): collapse ranked message hits to six score-neutral Conversation blocks; cite at most two current turns per Conversation while retaining global author/channel diversity; add at most three non-citable old ancestors per Conversation; and cap serialized source text at 12,600 characters.
 
 ## Not yet specified
 
