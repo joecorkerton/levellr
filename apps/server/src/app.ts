@@ -2,16 +2,24 @@ import express, { type Express, type Request, type Response } from "express";
 import {
   createBM25Index,
   loadCommunityMessagesSync,
-  type BM25Candidate,
   type BM25Index,
-  type BM25Intent,
-  type SentimentTimeWindow,
+  type CommunityMessage,
 } from "./retrieval/bm25.js";
+import {
+  prepareConversationEvidencePack,
+  type ConversationViewer,
+  type SerializedConversation,
+} from "./retrieval/conversation-pack.js";
+import {
+  synthesizeSentimentPulse,
+  type SentimentPulseDraft,
+  type SynthesisFailure,
+  type SynthesisResult,
+} from "./synthesis/gemini-adapter.js";
 
 export interface ServerConfig {
   port: number;
   clientOrigin: string;
-  /** Kept server-side for the future synthesis integration. */
   geminiApiKey?: string;
   answerModel: string;
   embeddingModel: string;
@@ -20,37 +28,34 @@ export interface ServerConfig {
 export interface HealthResponse {
   status: "ok";
   service: "community-pulse-api";
-  queryStatus: "retrieval_ready";
+  queryStatus: "grounded_answer_ready";
 }
 
-export interface QueryRequest {
-  query: string;
-}
+export interface QueryRequest { query: string }
 
-interface QueryMetadata {
+export interface QueryMetadata {
   originalQuery: string;
   searchQuery: string;
-  intent: BM25Intent;
-  dateWindow: SentimentTimeWindow | null;
+  intent: "excitement" | "frustration" | "mixed" | "unknown";
+  dateWindow: { days: number; start: string; end: string } | null;
 }
 
-export interface QueryRetrievalResponse {
-  status: "retrieved";
-  code: "RETRIEVAL_READY";
+export interface QuerySuccessResponse extends Omit<SentimentPulseDraft, "retrievalMode"> {
+  status: "ready";
   retrievalMode: "bm25";
-  message: "Candidate retrieval is ready; no grounded answer has been synthesized.";
-  query: QueryMetadata;
-  candidates: BM25Candidate[];
 }
 
-export interface QueryEmptyResponse {
-  status: "empty";
-  code: "NO_RESULTS";
+export interface QueryInsufficientEvidenceResponse {
+  status: "insufficient_evidence";
+  message: string;
   retrievalMode: "bm25";
-  message: "No Community message candidates matched this query and time window.";
-  query: QueryMetadata;
-  candidates: [];
+  parsedQuery: QueryMetadata;
+  conversations: SerializedConversation[];
+  viewer: ConversationViewer[];
+  inspectableCandidates: CommunityMessage[];
 }
+
+export interface QuerySynthesisFailureResponse extends SynthesisFailure {}
 
 export interface InvalidQueryResponse {
   status: "error";
@@ -58,81 +63,112 @@ export interface InvalidQueryResponse {
   message: string;
 }
 
-export type QueryResponse = QueryRetrievalResponse | QueryEmptyResponse | InvalidQueryResponse;
+export type QueryResponse =
+  | QuerySuccessResponse
+  | QueryInsufficientEvidenceResponse
+  | QuerySynthesisFailureResponse
+  | InvalidQueryResponse;
+
+export type Synthesize = typeof synthesizeSentimentPulse;
 
 export interface AppDependencies {
   retrievalIndex?: BM25Index;
+  messages?: readonly CommunityMessage[];
+  synthesize?: Synthesize;
 }
 
 export function createApp(config: ServerConfig, dependencies: AppDependencies = {}): Express {
-  const retrievalIndex =
-    dependencies.retrievalIndex ?? createBM25Index(loadCommunityMessagesSync());
+  const messages = dependencies.messages ?? loadCommunityMessagesSync();
+  const retrievalIndex = dependencies.retrievalIndex ?? createBM25Index(messages);
+  const synthesize = dependencies.synthesize ?? synthesizeSentimentPulse;
   const app = express();
 
   app.use((request, response, next) => {
     response.setHeader("Access-Control-Allow-Origin", config.clientOrigin);
     response.setHeader("Access-Control-Allow-Headers", "content-type");
     response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-
-    if (request.method === "OPTIONS") {
-      response.sendStatus(204);
-      return;
-    }
-
+    if (request.method === "OPTIONS") { response.sendStatus(204); return; }
     next();
   });
   app.use(express.json({ limit: "16kb" }));
 
   app.get("/api/health", (_request: Request, response: Response<HealthResponse>) => {
-    response.json({
-      status: "ok",
-      service: "community-pulse-api",
-      queryStatus: "retrieval_ready",
-    });
+    response.json({ status: "ok", service: "community-pulse-api", queryStatus: "grounded_answer_ready" });
   });
 
   app.post(
     "/api/query",
-    (request: Request<unknown, QueryResponse, Partial<QueryRequest>>, response: Response<QueryResponse>) => {
+    async (request: Request<unknown, QueryResponse, Partial<QueryRequest>>, response: Response<QueryResponse>) => {
       if (typeof request.body?.query !== "string" || request.body.query.trim().length === 0) {
-        response.status(400).json({
-          status: "error",
-          code: "INVALID_QUERY",
-          message: "Enter a manager query before asking Community Pulse.",
-        });
+        response.status(400).json({ status: "error", code: "INVALID_QUERY", message: "Enter a manager query before asking Community Pulse." });
         return;
       }
 
-      const result = retrievalIndex.search(request.body.query.trim());
-      const query = {
-        originalQuery: result.parsedQuery.originalQuery,
-        searchQuery: result.parsedQuery.searchQuery,
-        intent: result.parsedQuery.intent,
-        dateWindow: result.parsedQuery.dateWindow,
-      } satisfies QueryMetadata;
-
-      if (result.candidates.length === 0) {
-        response.json({
-          status: "empty",
-          code: "NO_RESULTS",
-          retrievalMode: "bm25",
-          message: "No Community message candidates matched this query and time window.",
-          query,
-          candidates: [],
-        });
-        return;
-      }
-
-      response.json({
-        status: "retrieved",
-        code: "RETRIEVAL_READY",
+      const managerQuery = request.body.query.trim();
+      const retrieval = retrievalIndex.search(managerQuery);
+      const evidencePack = prepareConversationEvidencePack({
         retrievalMode: "bm25",
-        message: "Candidate retrieval is ready; no grounded answer has been synthesized.",
-        query,
-        candidates: result.candidates,
+        parsedQuery: retrieval.parsedQuery,
+        candidates: retrieval.candidates,
+        messages,
       });
+      if (evidencePack.status === "insufficient_evidence") {
+        response.json(toQueryResponse(evidencePack));
+        return;
+      }
+
+      const result: SynthesisResult = await synthesize(
+        { managerQuery, evidencePack },
+        { apiKey: config.geminiApiKey, model: config.answerModel },
+      );
+
+      response.json(toQueryResponse(result));
     },
   );
 
   return app;
+}
+
+function toQueryResponse(result: SynthesisResult): QueryResponse {
+  if (result.status === "insufficient_evidence") {
+    return {
+      status: "insufficient_evidence",
+      message: "There is not enough distinct Conversation evidence to produce a grounded Sentiment pulse.",
+      retrievalMode: "bm25",
+      parsedQuery: result.parsedQuery,
+      conversations: result.conversations,
+      viewer: result.viewer,
+      inspectableCandidates: result.inspectableCandidates.map((message) => safeMessage(message)),
+    };
+  }
+  if (result.status === "ready") {
+    return {
+      status: "ready",
+      retrievalMode: "bm25",
+      parsedQuery: result.parsedQuery,
+      findings: result.findings,
+      viewer: result.viewer,
+    };
+  }
+  return {
+    status: result.status,
+    message: result.message,
+    retrievalMode: "bm25",
+    parsedQuery: result.parsedQuery,
+    conversations: result.conversations,
+    viewer: result.viewer,
+  };
+}
+
+function safeMessage(message: CommunityMessage): CommunityMessage {
+  return {
+    id: message.id,
+    community_id: message.community_id,
+    channel: message.channel,
+    author: message.author,
+    timestamp: message.timestamp,
+    text: message.text,
+    reactions: message.reactions,
+    reply_to: message.reply_to,
+  };
 }

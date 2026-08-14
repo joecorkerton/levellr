@@ -63,6 +63,19 @@ textarea:focus { border-color: #6c5934; }
 .empty-state .section-label { margin-bottom: 10px; }
 .empty-state h2 { color: #e8e4dc; font-size: 22px; }
 .empty-state p:last-child { color: #85857d; font-size: 14px; line-height: 1.6; margin: 12px 0 0; max-width: 530px; }
+.theme-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 25px; }
+.theme-card { background: #1b1b18; border: 1px solid #302f2b; padding: 18px; }
+.theme-topline { align-items: center; display: flex; gap: 10px; }
+.theme-card h3 { color: #eeeae1; font-size: 17px; letter-spacing: -.03em; margin: 0; }
+.theme-card > p { color: #b9b7ae; font-size: 14px; line-height: 1.55; margin: 15px 0; }
+.stance { border: 1px solid #6b6048; color: #d8b56d; font-family: 'DM Mono', monospace; font-size: 9px; padding: 5px 6px; text-transform: uppercase; }
+.stance.negative { color: #d79783; border-color: #765047; }.stance.mixed { color: #c7a9db; border-color: #685477; }.stance.neutral { color: #aaa99f; border-color: #55554d; }
+.citations { display: grid; gap: 7px; }.citation { border-top: 1px solid #36352f; padding-top: 8px; }
+.citation summary { color: #b9a171; cursor: pointer; display: flex; font-family: 'DM Mono', monospace; font-size: 10px; justify-content: space-between; gap: 8px; list-style: none; }
+.citation summary::-webkit-details-marker { display: none; }.citation blockquote { color: #ddd9d0; font-size: 13px; line-height: 1.5; margin: 10px 0; }
+.conversation { border-left: 2px solid #665636; margin: 10px 0 2px; padding-left: 11px; }.conversation-label { color: #b9a171; font-family: 'DM Mono', monospace; font-size: 9px; margin: 0 0 8px; text-transform: uppercase; }
+.turn { border-top: 1px solid #302f2b; padding: 8px 0; }.turn > div { display: flex; justify-content: space-between; gap: 8px; }.turn strong { color: #d8d4ca; font-size: 11px; }.turn small { color: #77766f; font-family: 'DM Mono', monospace; font-size: 9px; }.turn p { color: #aba9a0; font-size: 12px; line-height: 1.45; margin: 5px 0 0; }.turn.context { background: #201f1b; }.turn.not_sent_to_synthesis { opacity: .55; }
+.safe-state .empty-icon { color: #d79783; border-color: #765047; }
 
 .starter-section { margin: 58px 8% 0; }
 .starter-section .section-label { margin-bottom: 16px; }
