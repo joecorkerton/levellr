@@ -18,13 +18,13 @@ The repository/session did not contain the temporary key or a separately supplie
 
 - `.env.example` is the committed template.
 - `.env` is local-only and ignored by git.
-- Set only `GEMINI_API_KEY` in `.env`; do not commit its value.
+- Set only `GEMINI_API_KEY` in `.env`; do not commit its value. The template also names the answer and embedding models so later server-side jobs use stable identifiers.
 
 The SDK shape and failure categories below are verified against Google's current `@google/genai` source and documentation. The live success-path smoke check remains pending until `GEMINI_API_KEY` is populated.
 
 ### Integration decision
 
-Use the server-side `@google/genai` SDK with `gemini-2.5-flash` for constrained answer synthesis. Keep `gemini-2.5-flash-lite` as an explicitly configured option for a later cost/latency experiment, not as an automatic error fallback. `gemini-embedding-001` is not needed for the chosen local lexical retrieval approach.
+Use the server-side `@google/genai` SDK with `gemini-2.5-flash` for constrained answer synthesis. The hybrid retrieval decision in issue 01 also uses `gemini-embedding-001` for the one-time document/query embedding job; keep that model server-side and separate from answer synthesis. `gemini-2.5-flash-lite` is not part of this slice and must not be introduced as an automatic error fallback.
 
 The minimal request/response seam is:
 
